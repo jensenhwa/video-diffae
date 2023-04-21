@@ -6,11 +6,15 @@ from torch.nn.functional import silu
 
 from .latentnet import *
 from .unet import *
+from .resnet import *
+from .resnet50 import *
 from choices import *
 
 
 @dataclass
 class BeatGANsAutoencConfig(BeatGANsUNetConfig):
+    # number of frames in video (only used by UNet encoder)
+    frames: int = 9
     # number of style channels
     enc_out_channels: int = 512
     enc_attn_resolutions: Tuple[int] = None
@@ -35,7 +39,10 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             time_out_channels=conf.embed_channels,
         )
 
+        self.encoder = ResNetEncoderModel()
+        '''
         self.encoder = BeatGANsEncoderConfig(
+            frames=conf.frames,
             image_size=conf.image_size,
             in_channels=conf.in_channels,
             model_channels=conf.model_channels,
@@ -56,6 +63,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             use_new_attention_order=conf.use_new_attention_order,
             pool=conf.enc_pool,
         ).make_model()
+        '''
 
         if conf.latent_net_conf is not None:
             self.latent_net = conf.latent_net_conf.make_model()
@@ -123,6 +131,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
                 t,
                 y=None,
                 x_start=None,
+                x_resnet=None,
                 cond=None,
                 style=None,
                 noise=None,
@@ -148,7 +157,10 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             if x is not None:
                 assert len(x) == len(x_start), f'{len(x)} != {len(x_start)}'
 
-            tmp = self.encode(x_start)
+            if (x_resnet is None):
+                tmp = self.encode(x_start)
+            else:
+                tmp = self.encode(x_resnet)
             cond = tmp['cond']
 
         if t is not None:

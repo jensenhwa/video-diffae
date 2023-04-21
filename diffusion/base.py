@@ -101,6 +101,7 @@ class GaussianDiffusionBeatGans:
                         model: Model,
                         x_start: th.Tensor,
                         t: th.Tensor,
+                        x_resnet: th.Tensor = None,
                         model_kwargs=None,
                         noise: th.Tensor = None):
         """
@@ -133,6 +134,7 @@ class GaussianDiffusionBeatGans:
                 model_forward = model.forward(x=x_t.detach(),
                                               t=self._scale_timesteps(t),
                                               x_start=x_start.detach(),
+                                              x_resnet=x_resnet.detach(),
                                               **model_kwargs)
             model_output = model_forward.pred
 
