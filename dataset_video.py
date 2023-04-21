@@ -4,18 +4,23 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+import os
 from torchvision import transforms
+from tqdm import tqdm
 
 
 class ShanghaiTechDataset(Dataset):
     def __init__(self,
                  path,  # "/home/eprakash/shanghaitech/scripts/full_train_img_to_video.txt"
-                 image_size,
+                 image_size=128,
                  original_resolution=128,
                  stride: int = 16,
                  # Stride between frames (1 = use all frames, 2 = skip every other frame, etc.)
-                 cf_stride: bool = True):
+                 cf_stride: bool = True,
+                 use_flow: bool = True,):
+        image_size = 128
         self.original_resolution = original_resolution
+        self.use_flow = use_flow
         self.data, self.idx_to_vid, self.vid_to_idxs = self.load_data(path)
         self.stride = stride
         self.cf_stride = cf_stride
@@ -24,6 +29,7 @@ class ShanghaiTechDataset(Dataset):
         # Account for frames that cannot be used as center frame
         self.length = len(self.data) - len(self.vid_to_idxs) * self.stride * self.frame_batch_size * 2
         print(self.length)
+
 
         self.idx_to_centerframe = None
         self.get_center_frames()  # Set center frames to be used in __getitem__()
@@ -34,9 +40,15 @@ class ShanghaiTechDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ])
+        self.transform_flow = transforms.Compose([
+                transforms.Resize(image_size),
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5), (0.5)),
+            ])
 
     def load_data(self, path):
-        # print("LOADING DATA...")
+        print("LOADING DATA...")
         i = 0
         data = []
         idx_to_vid = {}
@@ -48,7 +60,21 @@ class ShanghaiTechDataset(Dataset):
                 idx_to_vid[i] = vid
                 vid_to_idxs[vid].append(i)
                 i += 1
-        # print("FINISHED LOADING DATA!")
+        print("FINISHED LOADING DATA!")
+        """
+        flow_data = {}
+        i=0
+        if self.use_flow:
+            for file in tqdm(os.listdir('/home/jy2k16/diffae/train_raw_flows')):
+                file_name = '/home/jy2k16/diffae/train_raw_flows/'+file
+                flows = torch.from_numpy(np.load(file_name)).permute((2,0,1))
+                flow_data[int(file.split("_")[1])] = flows
+                i+=1
+                if i == len(os.listdir('/home/jy2k16/diffae/train_raw_flows'))//2:
+                    break
+            print("FINISHED LOADING FLOW DATA!")
+        """
+            
         return data, idx_to_vid, vid_to_idxs
 
     def get_center_frames(self):
@@ -111,9 +137,20 @@ class ShanghaiTechDataset(Dataset):
 
             # dot = frame_img_path.rfind('.')
             # frame_img = torch.load(frame_img_path[:dot] + ".pt")
-
-            frame_img_orig = Image.open(frame_img_path).convert('RGB')
-            frame_img = self.transform(frame_img_orig)
+            if not self.use_flow:
+                frame_img_orig = Image.open(frame_img_path).convert('RGB')
+                frame_img = self.transform(frame_img_orig)
+            else:
+                frame_img_orig = Image.open(frame_img_path).convert('L')
+                frame_img = self.transform_flow(frame_img_orig)
+                #print('img shape',frame_img.shape)
+                if 'flow_{i}_{i+self.stride}.npy' in os.listdir('/home/jy2k16/diffae/train_raw_flows'):
+                    file_name = f'train_raw_flows/flow_{i}_{i+self.stride}.npy'
+                    flows = torch.from_numpy(np.load(file_name)).permute((2,0,1))
+                else:
+                    flows = torch.zeros(2,128,128)
+                #print('flow shape',flows.shape)
+                frame_img = torch.cat((frame_img,flows),dim=0)
 
             frame_batch.append(frame_img)
 

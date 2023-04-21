@@ -899,7 +899,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
                                        project='anomaly',
-                                       entity='jphwa',
+                                       entity='jy2k16',
                                        name=None,
                                        version='')
 

@@ -7,7 +7,7 @@ from torchvision import transforms
 class ResNetEncoderModel(nn.Module):
     def __init__(self):
         super().__init__()
-        resnet18 = models.video.r3d_18(weights='DEFAULT')
+        resnet18 = models.video.r3d_18('DEFAULT')
         modules = list(resnet18.children())[:-1]
         resnet18 = nn.Sequential(*modules)
         for param in resnet18.parameters():
