@@ -899,7 +899,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
                                        project='anomaly',
-                                       entity='jphwa',
+                                       entity='vid-anomaly-detect',
                                        name=None,
                                        version='')
 
@@ -916,7 +916,8 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
         plugins.append(DDPPlugin(find_unused_parameters=False))
 
     trainer = pl.Trainer(
-        max_steps=conf.total_samples // conf.batch_size_effective,
+        # max_steps=conf.total_samples // conf.batch_size_effective,
+        max_epochs=300,
         resume_from_checkpoint=resume,
         gpus=gpus,
         num_nodes=nodes,
