@@ -7,6 +7,7 @@ from torch.nn.functional import silu
 from .latentnet import *
 from .unet import *
 from .resnet import *
+from .resnet50 import *
 from choices import *
 
 
