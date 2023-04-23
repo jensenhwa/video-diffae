@@ -144,8 +144,8 @@ class ShanghaiTechDataset(Dataset):
                 frame_img_orig = Image.open(frame_img_path).convert('L')
                 frame_img = self.transform_flow(frame_img_orig)
                 #print('img shape',frame_img.shape)
-                if 'flow_{i}_{i+self.stride}.npy' in os.listdir('/home/jy2k16/diffae/train_raw_flows'):
-                    file_name = f'train_raw_flows/flow_{i}_{i+self.stride}.npy'
+                if f'flow_{i}_{i+self.stride}.npy' in os.listdir('/home/jy2k16/diffae/train_raw_flows'):
+                    file_name = f'/home/jy2k16/diffae/train_raw_flows/flow_{i}_{i+self.stride}.npy'
                     flows = torch.from_numpy(np.load(file_name)).permute((2,0,1))
                 else:
                     flows = torch.zeros(2,128,128)
