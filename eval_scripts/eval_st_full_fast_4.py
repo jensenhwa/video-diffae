@@ -13,6 +13,18 @@ from dataset_video import ShanghaiTechDataset
 from experiment import LitModel
 from templates_video import video_64_autoenc
 
+
+def encode_stochastic(model, x, cond, T=None):
+    if T is None:
+        sampler = model.eval_sampler
+    else:
+        sampler = model.conf._make_diffusion_conf(T).make_sampler()
+    out = sampler.ddim_reverse_sample_loop(model.ema_model,
+                                           x,
+                                           model_kwargs={'cond': cond})
+    return out
+
+
 torch.cuda.empty_cache()
 
 NUM_GPUS = 4 # Number of total GPUs being used, should be set to 1 if you are running python eval_st_anomaly.py with no args
@@ -67,7 +79,9 @@ with torch.no_grad():
         #seed = np.random.randint(0, 1000000)
         #torch.manual_seed(seed)
         #xT = torch.from_numpy(np.load("avg_st_train_encoding_256_4_full.txt")[None, :]).to(device).repeat(batch_len, 1, 1, 1, 1)
-        xT = model.encode_stochastic(frame_batch, cond, T=None)
+        xT = encode_stochastic(model, frame_batch, cond, T=None)
+        xT_all = xT['sample_t']
+        xT = xT['sample']
         #xT = xT.permute((2, 0, 1, 3, 4))
         #xT = torch.mean(xT, dim=0)[None, :]
         #xT = xT.repeat(9, 1, 1, 1, 1) 
@@ -80,43 +94,44 @@ with torch.no_grad():
         #xT = (xT_1 + xT_2)/2
         #torch.randn(batch_len, 3, 9, conf.img_size, conf.img_size).to(device)#model.encode_stochastic(frame_batch.to(device), cond, T=250)
 
-        #print("Decoding...")
-        pred = model.render(xT, cond, T=None)
         ori = (frame_batch + 1) / 2
         ori_tensor = ori.clone().cpu()
-        pred_tensor = pred.clone().cpu()
+        for xT_iter, xT in enumerate(xT_all):
+            #print("Decoding...")
+            pred = model.render(xT, cond, T=None)
+            pred_tensor = pred.clone().cpu()
 
-        #print("Calculating losses...")
-        abs_diff = torch.abs(pred.to(device) - ori.to(device))
-        abs_diff = torch.flatten(abs_diff, start_dim=1)
-        top = torch.topk(abs_diff, 10000, dim=1)[0]
-        mean_diff = torch.mean(top, dim=1)
-        with open("st_test_diffs_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
-            fp.write("Batch diffs: ")
-            for i in range(len(mean_diff)):
-                fp.write(str(mean_diff[i].item()) + "|")
-            fp.write("\n")
-        #print(mean_diff)
-        diff = torch.square(pred.to(device) - ori.to(device))
-        diff = diff.reshape(batch_len, F, 3, conf.img_size, conf.img_size)
-        diff_flat = torch.flatten(diff, start_dim=2)
-        #diff = torch.mean(torch.topk(diff_flat, int(3*128*128*0.10), dim=2)[0], dim=2)
-        diff = torch.mean(diff_flat, dim=2)
-        with open("st_test_mse_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
-            fp.write("Batch scores: ")
-            batch_mean = torch.mean(diff, dim=1)
-            for i in range(len(batch_mean)):
-                fp.write(str(batch_mean[i].item()) + "|")
-            fp.write("\n")
-        scores = 10 * torch.log10(torch.div(1, diff))
-        min_scores = torch.min(scores, dim=1)[0]
-        max_scores = torch.max(scores, dim=1)[0]
-        score = torch.div(torch.subtract(scores[:, 4], min_scores), torch.subtract(max_scores, min_scores))
-        with open("st_test_scores_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
-            fp.write("Batch scores: ")
-            for i in range(len(score)):
-                fp.write(str(score[i].item()) + "|")
-            fp.write("\n")
+            #print("Calculating losses...")
+            abs_diff = torch.abs(pred.to(device) - ori.to(device))
+            abs_diff = torch.flatten(abs_diff, start_dim=1)
+            top = torch.topk(abs_diff, 10000, dim=1)[0]
+            mean_diff = torch.mean(top, dim=1)
+            with open(f"st_test_diffs_resnet_small_obj_exp_multi_gpu_{cuda_device}_{xT_iter}.log", "a") as fp:
+                fp.write("Batch diffs: ")
+                for i in range(len(mean_diff)):
+                    fp.write(str(mean_diff[i].item()) + "|")
+                fp.write("\n")
+            #print(mean_diff)
+            diff = torch.square(pred.to(device) - ori.to(device))
+            diff = diff.reshape(batch_len, F, 3, conf.img_size, conf.img_size)
+            diff_flat = torch.flatten(diff, start_dim=2)
+            #diff = torch.mean(torch.topk(diff_flat, int(3*128*128*0.10), dim=2)[0], dim=2)
+            diff = torch.mean(diff_flat, dim=2)
+            with open(f"st_test_mse_resnet_small_obj_exp_multi_gpu_{cuda_device}_{xT_iter}.log", "a") as fp:
+                fp.write("Batch scores: ")
+                batch_mean = torch.mean(diff, dim=1)
+                for i in range(len(batch_mean)):
+                    fp.write(str(batch_mean[i].item()) + "|")
+                fp.write("\n")
+            scores = 10 * torch.log10(torch.div(1, diff))
+            min_scores = torch.min(scores, dim=1)[0]
+            max_scores = torch.max(scores, dim=1)[0]
+            score = torch.div(torch.subtract(scores[:, 4], min_scores), torch.subtract(max_scores, min_scores))
+            with open(f"st_test_scores_resnet_small_obj_exp_multi_gpu_{cuda_device}_{xT_iter}.log", "a") as fp:
+                fp.write("Batch scores: ")
+                for i in range(len(score)):
+                    fp.write(str(score[i].item()) + "|")
+                fp.write("\n")
         #print("Done batch " +  str(b))
     #print("Average loss: " +  str(np.mean(avg_loss)))
 print("DONE!")
