@@ -37,7 +37,8 @@ model.ema_model.eval()
 model.ema_model.to(device)
 
 
-data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/small_obj_test_list.txt", image_size=conf.img_size, need_eval=True, cf_stride=False)
+data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/small_obj_test_list.txt", image_size=conf.img_size,
+                           cf_stride=False)
 num_batches = int(len(data)/batch_size) + 1
 start_batch = (cuda_device * num_batches) // NUM_GPUS # Floored lower bound
 end_batch = ((cuda_device + 1) * num_batches) // NUM_GPUS # Floored upper bound
