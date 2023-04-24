@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import math
 import torch
@@ -11,6 +13,8 @@ from collections import defaultdict
 losses = []
 labels = []
 
+T = sys.argv[1]
+
 def find_closest_center_frame(idx, centerframe_to_idx):
    return centerframe_to_idx[min(centerframe_to_idx.keys(),key=lambda i:abs(i-idx))]
 ADD_LIST = [0, 154, 308, 462]
@@ -19,7 +23,7 @@ ADD = ADD_LIST[ADD_IDX]
 NUM_GPUS = 4
 for i in range(NUM_GPUS):
     #with open("st_test_scores_256_emb_enc_nc_16_multi_gpu_2.log".format(i), "r") as fp:
-    with open("st_test_scores_resnet_small_obj_exp_multi_gpu_{}.log".format(i), "r") as fp:
+    with open(f"st_test_scores_resnet_small_obj_exp_multi_gpu_{i}_{T}.log", "r") as fp:
         for line in fp:
             numbers = line.strip().split(" ")[2]
             numbers = numbers.split("|")[:-1]
