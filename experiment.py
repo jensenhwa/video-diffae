@@ -426,8 +426,8 @@ class LitModel(pl.LightningModule):
                 imgs = None
             else:
                 imgs = batch['img']
-            self.log_sample(x_start=imgs)
-            self.evaluate_scores()
+            #self.log_sample(x_start=imgs)
+            #self.evaluate_scores()
 
     def on_before_optimizer_step(self, optimizer: Optimizer,
                                  optimizer_idx: int) -> None:

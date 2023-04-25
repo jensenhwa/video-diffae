@@ -39,7 +39,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             time_out_channels=conf.embed_channels,
         )
 
-        self.encoder = ResNetEncoderModel()
+        self.encoder = ResNet50EncoderModel()
         '''
         self.encoder = BeatGANsEncoderConfig(
             frames=conf.frames,
@@ -144,7 +144,8 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             cond: output of the encoder
             noise: random noise (to predict the cond)
         """
-
+        
+        #print("X ", x.shape, "X_start ", x_start.shape)
         if t_cond is None:
             t_cond = t
 

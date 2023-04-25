@@ -21,8 +21,10 @@ def video_64_autoenc():
     conf.eval_every_samples = 10_000_000
     conf.eval_ema_every_samples = 10_000_000
     conf.total_samples = 1_000_000
-    # conf.batch_size = 4
+    conf.batch_size = 16
+    conf.sample_size = 16
     conf.net_ch = 8
-    conf.net_beatgans_embed_channels = 512
+    conf.net_beatgans_embed_channels = 2048
+    conf.style_ch = 2048
     conf.name = 'temp'#'video_st_flow+gs'
     return conf

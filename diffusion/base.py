@@ -130,12 +130,12 @@ class GaussianDiffusionBeatGans:
         ]:
             with autocast(self.conf.fp16):
                 # x_t is static wrt. to the diffusion process
+                #print("Xt ", x_t.shape, "X_start ", x_start.shape)
                 model_forward = model.forward(x=x_t.detach(),
                                               t=self._scale_timesteps(t),
                                               x_start=x_start.detach(),
                                               **model_kwargs)
             model_output = model_forward.pred
-
             _model_output = model_output
             if self.conf.train_pred_xstart_detach:
                 _model_output = _model_output.detach()
