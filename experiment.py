@@ -426,8 +426,8 @@ class LitModel(pl.LightningModule):
                 imgs = None
             else:
                 imgs = batch['img']
-            #self.log_sample(x_start=imgs)
-            #self.evaluate_scores()
+            self.log_sample(x_start=imgs)
+            self.evaluate_scores()
 
     def on_before_optimizer_step(self, optimizer: Optimizer,
                                  optimizer_idx: int) -> None:
@@ -898,7 +898,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
             resume = None
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
-                                       project='anomaly',
+                                       project='resnet50',
                                        entity='vid-anomaly-detect',
                                        name=None,
                                        version='')

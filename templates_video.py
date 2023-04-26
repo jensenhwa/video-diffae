@@ -26,5 +26,5 @@ def video_64_autoenc():
     conf.net_ch = 8
     conf.net_beatgans_embed_channels = 2048
     conf.style_ch = 2048
-    conf.name = 'temp'#'video_st_flow+gs'
+    conf.name = 'resnet50'#'video_st_flow+gs'
     return conf
