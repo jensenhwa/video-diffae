@@ -6,8 +6,8 @@ if __name__ == '__main__':
     # train the autoenc moodel
     # this can be run on 2080Ti's.
     print("ONE")
-    gpus = [0,1,2,3]
+    gpus = [4,5,6,7]
     conf = video_64_autoenc()
-    conf.name = "opticalflow_bw1"
+    conf.name = "opticalflow"
     train(conf, gpus=gpus)
 

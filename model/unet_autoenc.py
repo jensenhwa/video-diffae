@@ -7,6 +7,7 @@ from torch.nn.functional import silu
 from .latentnet import *
 from .unet import *
 from .resnet import *
+from .resnet50 import *
 from choices import *
 
 
@@ -38,7 +39,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             time_out_channels=conf.embed_channels,
         )
 
-        self.encoder = ResNetEncoderModel()
+        self.encoder = ResNet50EncoderModel()
         '''
         self.encoder = BeatGANsEncoderConfig(
             frames=conf.frames,

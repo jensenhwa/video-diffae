@@ -898,8 +898,8 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
             resume = None
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
-                                       project='anomaly',
-                                       entity='jy2k16',
+                                       project='resnet50',
+                                       entity='vid-anomaly-detect',
                                        name=None,
                                        version='')
 
