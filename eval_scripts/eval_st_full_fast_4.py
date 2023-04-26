@@ -29,15 +29,16 @@ if (cuda_device == 2 or cuda_device == 3):
     sys.exit()
 '''
 conf = video_64_autoenc()
+
 print(conf.name)
 model = LitModel(conf)
-state = torch.load(f'checkpoints/temp3/last.ckpt', map_location=device)
+state = torch.load(f'checkpoints/opticalflow_bw2/last.ckpt', map_location=device)
 model.load_state_dict(state['state_dict'], strict=False)
 model.ema_model.eval()
 model.ema_model.to(device)
 
-
-data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/small_obj_test_list.txt", image_size=conf.img_size, need_eval=True, cf_stride=False)
+conf.img_size = 128
+data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/test_list.txt", image_size=128, cf_stride=False)
 num_batches = int(len(data)/batch_size) + 1
 start_batch = (cuda_device * num_batches) // NUM_GPUS # Floored lower bound
 end_batch = ((cuda_device + 1) * num_batches) // NUM_GPUS # Floored upper bound
@@ -53,7 +54,7 @@ with torch.no_grad():
         batch_len = batch_size
         if (b == num_batches - 1):
             batch_len = len(data) - batch_size * b
-        frame_batch = torch.zeros(size=(batch_len, 3, F, conf.img_size, conf.img_size), device=device)
+        frame_batch = torch.zeros(size=(batch_len, 3, F, 128, 128), device=device)
         for i in range(batch_len):
             frame_batch[i] = data[batch_size * b + i]['img'][None]
             #if (i % 10 == 0):
@@ -90,7 +91,7 @@ with torch.no_grad():
         abs_diff = torch.flatten(abs_diff, start_dim=1)
         top = torch.topk(abs_diff, 10000, dim=1)[0]
         mean_diff = torch.mean(top, dim=1)
-        with open("st_test_diffs_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
+        with open("st_test_diffs_optical_flow_bw_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
             fp.write("Batch diffs: ")
             for i in range(len(mean_diff)):
                 fp.write(str(mean_diff[i].item()) + "|")
@@ -101,7 +102,7 @@ with torch.no_grad():
         diff_flat = torch.flatten(diff, start_dim=2)
         #diff = torch.mean(torch.topk(diff_flat, int(3*128*128*0.10), dim=2)[0], dim=2)
         diff = torch.mean(diff_flat, dim=2)
-        with open("st_test_mse_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
+        with open("st_test_mse_optical_flow_bw_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
             fp.write("Batch scores: ")
             batch_mean = torch.mean(diff, dim=1)
             for i in range(len(batch_mean)):
@@ -111,7 +112,7 @@ with torch.no_grad():
         min_scores = torch.min(scores, dim=1)[0]
         max_scores = torch.max(scores, dim=1)[0]
         score = torch.div(torch.subtract(scores[:, 4], min_scores), torch.subtract(max_scores, min_scores))
-        with open("st_test_scores_resnet_small_obj_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
+        with open("st_test_scores_optical_flow_bw_exp_multi_gpu_{}.log".format(cuda_device), "a") as fp:
             fp.write("Batch scores: ")
             for i in range(len(score)):
                 fp.write(str(score[i].item()) + "|")
