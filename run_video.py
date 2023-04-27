@@ -8,6 +8,6 @@ if __name__ == '__main__':
     print("ONE")
     gpus = [0,1,2,3]
     conf = video_64_autoenc()
-    conf.name = "resnet50"
+    conf.name = "resnet50_deep_unet"
     train(conf, gpus=gpus)
 
