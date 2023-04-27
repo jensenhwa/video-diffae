@@ -131,6 +131,7 @@ class ShanghaiTechDataset(Dataset):
         assert (right_lim - left_lim == self.frame_batch_size * self.stride * 2 + 1)
 
         frame_batch = []
+        flows_batch = []
 
         for i in range(left_lim, right_lim, self.stride):
             frame_img_path = self.data[i]
@@ -143,17 +144,19 @@ class ShanghaiTechDataset(Dataset):
             else:
                 frame_img_orig = Image.open(frame_img_path).convert('L')
                 frame_img = self.transform_flow(frame_img_orig)
-                #print('img shape',frame_img.shape)
                 if 'flow_{i}_{i+self.stride}.npy' in os.listdir('/home/jy2k16/diffae/train_raw_flows'):
                     file_name = f'train_raw_flows/flow_{i}_{i+self.stride}.npy'
                     flows = torch.from_numpy(np.load(file_name)).permute((2,0,1))
                 else:
                     flows = torch.zeros(2,128,128)
-                #print('flow shape',flows.shape)
-                frame_img = torch.cat((frame_img,flows),dim=0)
+                flows_batch.append(flows)
 
             frame_batch.append(frame_img)
 
-        frame_batch = torch.stack(frame_batch).permute((1, 0, 2, 3))
+        frame_batch = torch.stack(frame_batch)
+        if self.use_flow:
+            flows_batch = torch.stack(flows_batch)
+            frame_batch = torch.cat((frame_batch, flows_batch), dim=1)
 
+        frame_batch = frame_batch.permute((1, 0, 2, 3))  # (C, T, H, W)
         return {'img': frame_batch, 'index': index}
