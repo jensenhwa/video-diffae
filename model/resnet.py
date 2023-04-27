@@ -7,12 +7,8 @@ from torchvision.models.video import R3D_18_Weights
 class ResNetEncoderModel(nn.Module):
     def __init__(self):
         super().__init__()
-<<<<<<< HEAD
-        resnet18 = models.video.r3d_18('DEFAULT')
-=======
         weights = R3D_18_Weights.DEFAULT
         resnet18 = models.video.r3d_18(weights=weights)
->>>>>>> 15c8ca676914fb0652d5a21279bb56ddf900fb72
         modules = list(resnet18.children())[:-1]
         resnet18 = nn.Sequential(*modules)
         for param in resnet18.parameters():

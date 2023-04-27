@@ -131,6 +131,7 @@ class ShanghaiTechDataset(Dataset):
         assert (right_lim - left_lim == self.frame_batch_size * self.stride * 2 + 1)
 
         frame_batch = []
+        flows_batch = []
 
         for i in range(left_lim, right_lim, self.stride):
             frame_img_path = self.data[i]
@@ -149,11 +150,14 @@ class ShanghaiTechDataset(Dataset):
                     flows = torch.load(file_name)
                 else:
                     flows = torch.zeros(2,128,128)
-                #print('flow shape',flows.shape)
-                frame_img = torch.cat((frame_img,flows),dim=0)
+                flows_batch.append(flows)
 
             frame_batch.append(frame_img)
 
-        frame_batch = torch.stack(frame_batch).permute((1, 0, 2, 3))
+        frame_batch = torch.stack(frame_batch)
+        if self.use_flow:
+            flows_batch = torch.stack(flows_batch)
+            frame_batch = torch.cat((frame_batch, flows_batch), dim=1)
 
+        frame_batch = frame_batch.permute((1, 0, 2, 3))  # (C, T, H, W)
         return {'img': frame_batch, 'index': index}
