@@ -1,4 +1,4 @@
-from templates import ffhq64_autoenc
+from templates import ffhq64_autoenc, ffhq128_autoenc_130M
 
 
 def shanghai_64_autoenc():
@@ -11,8 +11,8 @@ def shanghai_64_autoenc():
     conf.name = 'shanghai_autoenc'
     return conf
 
-def video_64_autoenc():
-    conf = ffhq64_autoenc()
+def video_autoenc():
+    conf = ffhq128_autoenc_130M()
     #conf.net_ch_mult = (1, 2, 4, 4)
     conf.net_ch_mult = (1,1)
     conf.net_enc_channel_mult = (1, 2, 4, 8, 8)

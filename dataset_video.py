@@ -18,7 +18,6 @@ class ShanghaiTechDataset(Dataset):
                  # Stride between frames (1 = use all frames, 2 = skip every other frame, etc.)
                  cf_stride: bool = True,
                  use_flow: bool = True,):
-        image_size = 128
         self.original_resolution = original_resolution
         self.use_flow = use_flow
         self.data, self.idx_to_vid, self.vid_to_idxs = self.load_data(path)
