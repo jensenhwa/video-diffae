@@ -14,7 +14,7 @@ class ShanghaiTechDataset(Dataset):
                  path,  # "/home/eprakash/shanghaitech/scripts/full_train_img_to_video.txt"
                  image_size=128,
                  original_resolution=128,
-                 flow_path = '/home/jy2k16/video-diffae/train_raw_flows_pt'
+                 flow_path = '/home/jy2k16/video-diffae/train_raw_flows_pt',
                  stride: int = 16,
                  # Stride between frames (1 = use all frames, 2 = skip every other frame, etc.)
                  cf_stride: bool = True,
@@ -147,7 +147,7 @@ class ShanghaiTechDataset(Dataset):
                 frame_img = self.transform_flow(frame_img_orig)
                 #print('img shape',frame_img.shape)
                 if f'flow_{i}_{i+self.stride}.pt' in os.listdir(self.flow_path):
-                    file_name = self.flow_path + '/flow_{i}_{i+self.stride}.pt'
+                    file_name = self.flow_path + f'/flow_{i}_{i+self.stride}.pt'
                     flows = torch.load(file_name)
                 else:
                     flows = torch.zeros(2,128,128)

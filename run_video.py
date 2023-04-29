@@ -8,6 +8,6 @@ if __name__ == '__main__':
     print("ONE")
     gpus = [0,1,2,3]
     conf = video_autoenc()
-    conf.name = "opticalflow_fixed_resnet18"
+    conf.name = "temp"
     train(conf, gpus=gpus)
 
