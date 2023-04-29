@@ -39,7 +39,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             time_out_channels=conf.embed_channels,
         )
 
-        self.encoder = ResNet50EncoderModel()
+        self.encoder = ResNetEncoderModel()
         '''
         self.encoder = BeatGANsEncoderConfig(
             frames=conf.frames,
