@@ -23,6 +23,7 @@ def video_64_autoenc():
     conf.total_samples = 1_000_000
     # conf.batch_size = 4
     conf.net_ch = 8
-    conf.net_beatgans_embed_channels = 512
-    conf.name = 'temp'#'video_st_flow+gs'
+    conf.net_beatgans_embed_channels = 1024
+    conf.style_ch = 1024
+    conf.name = 'semanticof'#'video_st_flow+gs'
     return conf

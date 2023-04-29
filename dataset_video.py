@@ -14,7 +14,8 @@ class ShanghaiTechDataset(Dataset):
                  original_resolution=128,
                  stride: int = 16,
                  # Stride between frames (1 = use all frames, 2 = skip every other frame, etc.)
-                 cf_stride: bool = True):
+                 cf_stride: bool = True,
+                 use_flow: bool = True):
         self.original_resolution = original_resolution
         self.data, self.idx_to_vid, self.vid_to_idxs = self.load_data(path)
         self.stride = stride
@@ -24,7 +25,7 @@ class ShanghaiTechDataset(Dataset):
         # Account for frames that cannot be used as center frame
         self.length = len(self.data) - len(self.vid_to_idxs) * self.stride * self.frame_batch_size * 2
         print(self.length)
-
+        self.use_flow = use_flow
         self.idx_to_centerframe = None
         self.get_center_frames()  # Set center frames to be used in __getitem__()
 
@@ -105,7 +106,7 @@ class ShanghaiTechDataset(Dataset):
         assert (right_lim - left_lim == self.frame_batch_size * self.stride * 2 + 1)
 
         frame_batch = []
-
+        flows_batch = []
         for i in range(left_lim, right_lim, self.stride):
             frame_img_path = self.data[i]
 
@@ -114,9 +115,19 @@ class ShanghaiTechDataset(Dataset):
 
             frame_img_orig = Image.open(frame_img_path).convert('RGB')
             frame_img = self.transform(frame_img_orig)
+            
+            if self.use_flow:
+                frame_img_orig_flow = Image.open(frame_img_path).convert('L')
+                frame_img_flow = self.transform_flow(frame_img_orig_flow)
+                if f'flow_{i}_{i+self.stride}.pt' in os.listdir('/home/jy2k16/video-diffae/train_raw_flows_pt'):
+                    file_name = f'/home/jy2k16/video-diffae/train_raw_flows_pt/flow_{i}_{i+self.stride}.pt'
+                    flows = torch.load(file_name)
+                else:
+                    flows = torch.zeros(2,128,128)
+                flows_batch.append(flows)
 
             frame_batch.append(frame_img)
 
         frame_batch = torch.stack(frame_batch).permute((1, 0, 2, 3))
 
-        return {'img': frame_batch, 'index': index}
+        return {'img': frame_batch, 'index': index, 'flows': torch.stack(flows_batch)}

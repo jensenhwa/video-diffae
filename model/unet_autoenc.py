@@ -89,8 +89,8 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
         assert self.conf.noise_net_conf is not None
         return self.noise_net.forward(noise)
 
-    def encode(self, x):
-        cond = self.encoder.forward(x)
+    def encode(self, x, flows):
+        cond = self.encoder.forward(x, flows)
         return {'cond': cond}
 
     @property
@@ -130,6 +130,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
                 t,
                 y=None,
                 x_start=None,
+                flows=None,
                 cond=None,
                 style=None,
                 noise=None,
@@ -155,7 +156,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             if x is not None:
                 assert len(x) == len(x_start), f'{len(x)} != {len(x_start)}'
 
-            tmp = self.encode(x_start)
+            tmp = self.encode(x_start, flows)
             cond = tmp['cond']
 
         if t is not None:

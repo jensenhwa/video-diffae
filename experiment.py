@@ -363,7 +363,7 @@ class LitModel(pl.LightningModule):
                     cond = (cond - self.conds_mean.to(
                         self.device)) / self.conds_std.to(self.device)
             else:
-                imgs, idxs = batch['img'], batch['index']
+                imgs, idxs, flows = batch['img'], batch['index'], batch['flows']
                 # print(f'(rank {self.global_rank}) batch size:', len(imgs))
                 x_start = imgs
 
@@ -375,6 +375,7 @@ class LitModel(pl.LightningModule):
                 t, weight = self.T_sampler.sample(len(x_start), x_start.device)
                 losses = self.sampler.training_losses(model=self.model,
                                                       x_start=x_start,
+                                                      flows=flows,
                                                       t=t)
             elif self.conf.train_mode.is_latent_diffusion():
                 """
@@ -898,7 +899,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
             resume = None
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
-                                       project='anomaly',
+                                       project='resnet50',
                                        entity='vid-anomaly-detect',
                                        name=None,
                                        version='')
