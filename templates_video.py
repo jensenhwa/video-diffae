@@ -21,7 +21,8 @@ def video_64_autoenc():
     conf.eval_every_samples = 10_000_000
     conf.eval_ema_every_samples = 10_000_000
     conf.total_samples = 1_000_000
-    # conf.batch_size = 4
+    conf.batch_size = 64
+    conf.sample_size= 64
     conf.net_ch = 8
     conf.net_beatgans_embed_channels = 1024
     conf.style_ch = 1024

@@ -147,6 +147,7 @@ class GaussianDiffusionBeatGans:
                 # gradient goes through x_t
                 x=x_t,
                 t=t,
+                flows=flows,
                 clip_denoised=False)
             terms['pred_xstart'] = p_mean_var['pred_xstart']
 
@@ -186,6 +187,7 @@ class GaussianDiffusionBeatGans:
                noise=None,
                cond=None,
                x_start=None,
+               flows=None,
                clip_denoised=True,
                model_kwargs=None,
                progress=False):
@@ -211,6 +213,7 @@ class GaussianDiffusionBeatGans:
                                          shape=shape,
                                          noise=noise,
                                          clip_denoised=clip_denoised,
+                                         flows=flows,
                                          model_kwargs=model_kwargs,
                                          progress=progress)
         else:
@@ -277,6 +280,7 @@ class GaussianDiffusionBeatGans:
                         model: Model,
                         x,
                         t,
+                        flows,
                         clip_denoised=True,
                         denoised_fn=None,
                         model_kwargs=None):
@@ -308,6 +312,7 @@ class GaussianDiffusionBeatGans:
         with autocast(self.conf.fp16):
             model_forward = model.forward(x=x,
                                           t=self._scale_timesteps(t),
+                                          flows=flows,
                                           **model_kwargs)
         model_output = model_forward.pred
 
@@ -588,6 +593,7 @@ class GaussianDiffusionBeatGans:
         model: Model,
         x,
         t,
+        flows,
         clip_denoised=True,
         denoised_fn=None,
         cond_fn=None,
@@ -603,6 +609,7 @@ class GaussianDiffusionBeatGans:
             model,
             x,
             t,
+            flows,
             clip_denoised=clip_denoised,
             denoised_fn=denoised_fn,
             model_kwargs=model_kwargs,
@@ -637,6 +644,7 @@ class GaussianDiffusionBeatGans:
         model: Model,
         x,
         t,
+        flows,
         clip_denoised=True,
         denoised_fn=None,
         model_kwargs=None,
@@ -651,6 +659,7 @@ class GaussianDiffusionBeatGans:
             model,
             x,
             t,
+            flows,
             clip_denoised=clip_denoised,
             denoised_fn=denoised_fn,
             model_kwargs=model_kwargs,
@@ -721,6 +730,7 @@ class GaussianDiffusionBeatGans:
         shape=None,
         noise=None,
         clip_denoised=True,
+        flows=None,
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
@@ -741,6 +751,7 @@ class GaussianDiffusionBeatGans:
                 clip_denoised=clip_denoised,
                 denoised_fn=denoised_fn,
                 cond_fn=cond_fn,
+                flows=flows,
                 model_kwargs=model_kwargs,
                 device=device,
                 progress=progress,
@@ -754,6 +765,7 @@ class GaussianDiffusionBeatGans:
         model: Model,
         shape=None,
         noise=None,
+        flows=None,
         clip_denoised=True,
         denoised_fn=None,
         cond_fn=None,
@@ -798,6 +810,7 @@ class GaussianDiffusionBeatGans:
                     model,
                     img,
                     t,
+                    flows=flows,
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     cond_fn=cond_fn,

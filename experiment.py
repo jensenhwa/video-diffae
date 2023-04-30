@@ -426,8 +426,8 @@ class LitModel(pl.LightningModule):
             if self.conf.train_mode.require_dataset_infer():
                 imgs = None
             else:
-                imgs = batch['img']
-            self.log_sample(x_start=imgs)
+                imgs, flows = batch['img'], batch['flows']
+            self.log_sample(x_start=imgs, flows=flows)
             self.evaluate_scores()
 
     def on_before_optimizer_step(self, optimizer: Optimizer,
@@ -444,7 +444,7 @@ class LitModel(pl.LightningModule):
                                            max_norm=self.conf.grad_clip)
             # print('after:', grads_norm(iter_opt_params(optimizer)))
 
-    def log_sample(self, x_start):
+    def log_sample(self, x_start, flows):
         """
         put images to the tensorboard
         """
@@ -499,7 +499,8 @@ class LitModel(pl.LightningModule):
                         gen = self.eval_sampler.sample(model=model,
                                                        noise=x_T,
                                                        cond=cond,
-                                                       x_start=_xstart)
+                                                       x_start=_xstart,
+                                                       flows=flows)
                     Gen.append(gen)
 
                 gen = torch.cat(Gen)
@@ -899,7 +900,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
             resume = None
 
     tb_logger = pl_loggers.WandbLogger(save_dir=conf.logdir,
-                                       project='resnet50',
+                                       project='anomaly',
                                        entity='vid-anomaly-detect',
                                        name=None,
                                        version='')

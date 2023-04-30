@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import os
 import numpy as np
 import torch
 from PIL import Image
@@ -35,6 +35,7 @@ class ShanghaiTechDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ])
+
 
     def load_data(self, path):
         # print("LOADING DATA...")
@@ -117,8 +118,6 @@ class ShanghaiTechDataset(Dataset):
             frame_img = self.transform(frame_img_orig)
             
             if self.use_flow:
-                frame_img_orig_flow = Image.open(frame_img_path).convert('L')
-                frame_img_flow = self.transform_flow(frame_img_orig_flow)
                 if f'flow_{i}_{i+self.stride}.pt' in os.listdir('/home/jy2k16/video-diffae/train_raw_flows_pt'):
                     file_name = f'/home/jy2k16/video-diffae/train_raw_flows_pt/flow_{i}_{i+self.stride}.pt'
                     flows = torch.load(file_name)

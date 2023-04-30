@@ -130,7 +130,7 @@ class _WrappedModel:
         self.rescale_timesteps = rescale_timesteps
         self.original_num_steps = original_num_steps
 
-    def forward(self, x, t, t_cond=None, **kwargs):
+    def forward(self, x, t, flows, t_cond=None, **kwargs):
         """
         Args:
             t: t's with differrent ranges (can be << T due to smaller eval T) need to be converted to the original t's
@@ -150,7 +150,7 @@ class _WrappedModel:
             # support t_cond
             t_cond = do(t_cond)
 
-        return self.model(x=x, t=do(t), t_cond=t_cond, **kwargs)
+        return self.model(x=x, t=do(t), flows=flows, t_cond=t_cond, **kwargs)
 
     def __getattr__(self, name):
         # allow for calling the model's methods
