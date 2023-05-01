@@ -10,42 +10,66 @@ from collections import defaultdict
 
 losses = []
 labels = []
+idx_to_centerframe = defaultdict(int)
+centerframe_to_idx = defaultdict(int)
+
 
 def find_closest_center_frame(idx, centerframe_to_idx):
    return centerframe_to_idx[min(centerframe_to_idx.keys(),key=lambda i:abs(i-idx))]
+
+
 ADD_LIST = [0, 154, 308, 462]
 ADD_IDX = 0
 ADD = ADD_LIST[ADD_IDX]
 NUM_GPUS = 4
-for i in range(NUM_GPUS):
-    #with open("st_test_scores_256_emb_enc_nc_16_multi_gpu_2.log".format(i), "r") as fp:
-    with open("st_test_scores_resnet_small_obj_exp_multi_gpu_{}.log".format(i), "r") as fp:
-        for line in fp:
-            numbers = line.strip().split(" ")[2]
-            numbers = numbers.split("|")[:-1]
-            for number in numbers:
-                losses.append(float(number))
-                #losses.append(10 * np.log10(1/float(number)))
+ORIG_BATCH_SIZE = 4  # TODO: Set the batch size used when generating scores
+
+current_sample_idx = 0
+if ORIG_BATCH_SIZE == 1:
+    stop_points = [6774, 13548, 20322, 27096]
+elif ORIG_BATCH_SIZE == 4:
+    stop_points = [1693 * 4, 3387 * 4, 5080 * 4, 6774 * 4]  # [6772, 13548, 1270, 27096]
+else:
+    raise ValueError("unsupported orig_batch_size")
+partial = False
+with open("/home/eprakash/diffae/idx_to_centerframe_16.txt", "r") as fp3:
+    for i in range(NUM_GPUS):
+        with open(f"st_test_scores_optical_flow_bw_exp_multi_gpu_{i}.log", "r") as fp:  # TODO: Replace with filepath to scores
+
+            for line in fp:
+                numbers = line.strip().split(" ")[2]
+                numbers = numbers.split("|")[:-1]
+                for number in numbers:
+                    losses.append(float(number))
+
+                    # Load centerframes
+                    old_loss_idx, idx = fp3.readline().strip().split(",")
+                    assert int(old_loss_idx) == current_sample_idx, f"{old_loss_idx} =/= {current_sample_idx}"
+                    idx = int(idx)
+                    idx_to_centerframe[len(losses) - 1] = idx
+                    centerframe_to_idx[idx] = len(losses) - 1
+                    #losses.append(10 * np.log10(1/float(number)))
+                    current_sample_idx += 1
+
+        print(current_sample_idx)
+        if i < NUM_GPUS - 1:
+            while current_sample_idx not in stop_points:
+                partial = True
+                fp3.readline()
+                current_sample_idx += 1
+
+            assert current_sample_idx == stop_points[i], f"{current_sample_idx} =/= {stop_points[i]}, i={i}"
+
 losses = np.array(losses)
 print("Num examples: ", str(len(losses)))
 
 #Load test set labels
-with open("/home/eprakash/shanghaitech/testing/small_obj_test_labels_list.txt", "r") as fp:
+with open("/home/eprakash/shanghaitech/testing/test_labels_list.txt", "r") as fp:
     for line in fp:
         label = int(line.strip())
         labels.append(label)
 test_len = len(labels)
-
-#Load centerframes
-idx_to_centerframe = defaultdict(int)
-centerframe_to_idx = defaultdict(int)
-with open("/home/eprakash/diffae/idx_to_centerframe_small_obj.txt", "r") as fp:
-    for line in fp:
-        i, idx = line.strip().split(",")
-        i = int(i)
-        idx = int(idx)
-        idx_to_centerframe[i] = idx
-        centerframe_to_idx[idx] = i
+print("Num labels: ", str(len(labels)))
 
 #Load SOTA scores
 #scores = np.load("scores/final_test_scores.npy")
@@ -99,14 +123,15 @@ true_positives = len(np.where(np.array(anomaly_scores) <= threshold)[0])/len(los
 
 print("False negatives: ", false_negatives, " False positives: ", false_positives, " True negatives: ", true_negatives, " True positives: ", true_positives)
 
-#Load edge frames
-edge_frame_idxs = list(set(idx_to_centerframe.values()) ^ set(range(test_len)))
-edge_centerframe_idxs = [find_closest_center_frame(idx, centerframe_to_idx) for idx in edge_frame_idxs] 
-edge_centerframe_losses = np.array([losses[idx] for idx in edge_centerframe_idxs])
-edge_centerframe_labels = np.array([labels[idx] for idx in edge_centerframe_idxs])
-print("Percentage edge frames: ", str(len(edge_centerframe_losses)/(len(losses) + len(edge_centerframe_losses))))
-losses = np.concatenate((losses, edge_centerframe_losses), axis=0)
-labels = np.concatenate((labels, edge_centerframe_labels), axis=0)
+# Load edge frames if scores are complete
+if not partial:
+    edge_frame_idxs = list(set(idx_to_centerframe.values()) ^ set(range(test_len)))
+    edge_centerframe_idxs = [find_closest_center_frame(idx, centerframe_to_idx) for idx in edge_frame_idxs]
+    edge_centerframe_losses = np.array([losses[idx] for idx in edge_centerframe_idxs])
+    edge_centerframe_labels = np.array([labels[idx] for idx in edge_centerframe_idxs])
+    print("Percentage edge frames: ", str(len(edge_centerframe_losses)/(len(losses) + len(edge_centerframe_losses))))
+    losses = np.concatenate((losses, edge_centerframe_losses), axis=0)
+    labels = np.concatenate((labels, edge_centerframe_labels), axis=0)
 
 #Calculate AUCs
 print(losses)
