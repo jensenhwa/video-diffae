@@ -44,7 +44,7 @@ class ShanghaiTechDataset(Dataset):
                 transforms.Resize(image_size),
                 transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5)),
+                transforms.Normalize((0.4413), (0.2030)),
             ])
 
     def load_data(self, path):
@@ -148,6 +148,7 @@ class ShanghaiTechDataset(Dataset):
                 if f'flow_{i}_{i+self.stride}.pt' in os.listdir('/home/jy2k16/video-diffae/train_raw_flows_pt'):
                     file_name = f'/home/jy2k16/video-diffae/train_raw_flows_pt/flow_{i}_{i+self.stride}.pt'
                     flows = torch.load(file_name)
+                    flows = transforms.Normalize((0.3,0.2462),(10.7345,6.0563))(flows)
                 else:
                     flows = torch.zeros(2,128,128)
                 flows_batch.append(flows)
