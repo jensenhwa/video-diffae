@@ -126,23 +126,23 @@ class LitModel(pl.LightningModule):
 
         if cond is not None:
             pred_img = render_condition(self.conf,
-                                        self.ema_model,
+                                        self.model,
                                         noise,
                                         sampler=sampler,
                                         cond=cond)
         else:
             pred_img = render_uncondition(self.conf,
-                                          self.ema_model,
+                                          self.model,
                                           noise,
                                           sampler=sampler,
                                           latent_sampler=None)
         pred_img = (pred_img + 1) / 2
         return pred_img
 
-    def encode(self, x):
+    def encode(self, x, flows):
         # TODO:
         assert self.conf.model_type.has_autoenc()
-        cond = self.ema_model.encoder.forward(x)
+        cond = self.model.encoder.forward(x, flows)
         return cond
 
     def encode_stochastic(self, x, cond, T=None):
@@ -150,7 +150,7 @@ class LitModel(pl.LightningModule):
             sampler = self.eval_sampler
         else:
             sampler = self.conf._make_diffusion_conf(T).make_sampler()
-        out = sampler.ddim_reverse_sample_loop(self.ema_model,
+        out = sampler.ddim_reverse_sample_loop(self.model,
                                                x,
                                                model_kwargs={'cond': cond})
         return out['sample']

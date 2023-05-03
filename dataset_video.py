@@ -118,8 +118,8 @@ class ShanghaiTechDataset(Dataset):
             frame_img = self.transform(frame_img_orig)
             
             if self.use_flow:
-                if f'flow_{i}_{i+self.stride}.pt' in os.listdir('/home/jy2k16/video-diffae/train_raw_flows_pt'):
-                    file_name = f'/home/jy2k16/video-diffae/train_raw_flows_pt/flow_{i}_{i+self.stride}.pt'
+                if f'flow_{i}_{i+self.stride}.pt' in os.listdir('/home/jy2k16/video-diffae/test_raw_flows_pt'):
+                    file_name = f'/home/jy2k16/video-diffae/test_raw_flows_pt/flow_{i}_{i+self.stride}.pt'
                     flows = torch.load(file_name)
                 else:
                     flows = torch.zeros(2,128,128)
