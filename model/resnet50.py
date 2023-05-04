@@ -3,15 +3,6 @@ from torchvision import models
 from torch import nn
 from torchvision import transforms
 
-from torchvision.transforms._transforms_video import (
-    CenterCropVideo,
-    NormalizeVideo,
-)
-from pytorchvideo.transforms import (
-    ApplyTransformToKey,
-    ShortSideScale,
-    UniformTemporalSubsample
-)
 
 class ResNet50EncoderModel(nn.Module):
     def __init__(self):

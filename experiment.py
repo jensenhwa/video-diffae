@@ -11,6 +11,7 @@ import wandb
 from numpy.lib.function_base import flip
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import *
+from pytorch_lightning.strategies import DDPStrategy
 from torch import nn
 from torch.cuda import amp
 from torch.distributions import Categorical
@@ -406,8 +407,7 @@ class LitModel(pl.LightningModule):
 
         return {'loss': loss}
 
-    def on_train_batch_end(self, outputs, batch, batch_idx: int,
-                           dataloader_idx: int) -> None:
+    def on_train_batch_end(self, outputs, batch, batch_idx: int) -> None:
         """
         after each training step ...
         """
@@ -907,13 +907,9 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
 
     plugins = []
     if len(gpus) == 1 and nodes == 1:
-        accelerator = None
+        strategy = None
     else:
-        accelerator = 'ddp'
-        from pytorch_lightning.plugins import DDPPlugin
-
-        # important for working with gradient checkpoint
-        plugins.append(DDPPlugin(find_unused_parameters=False))
+        strategy = DDPStrategy(find_unused_parameters=False)
 
     trainer = pl.Trainer(
         # max_steps=conf.total_samples // conf.batch_size_effective,
@@ -921,7 +917,8 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
         resume_from_checkpoint=resume,
         gpus=gpus,
         num_nodes=nodes,
-        accelerator=accelerator,
+        accelerator="gpu",
+        strategy=strategy,
         precision=16 if conf.fp16 else 32,
         callbacks=[
             checkpoint,
@@ -932,7 +929,6 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
         replace_sampler_ddp=True,
         logger=tb_logger,
         accumulate_grad_batches=conf.accum_batches,
-        plugins=plugins,
     )
 
     if mode == 'train':
