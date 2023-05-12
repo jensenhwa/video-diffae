@@ -34,7 +34,7 @@ else:
 partial = False
 with open("/home/eprakash/diffae/idx_to_centerframe_16.txt", "r") as fp3:
     for i in range(NUM_GPUS):
-        with open(f"st_test_scores_optical_flow_bw_exp_multi_gpu_{i}.log", "r") as fp:  # TODO: Replace with filepath to scores
+        with open(f"2023-05-12T05:00:07_ssim_obj_{i}.log", "r") as fp:  # TODO: Replace with filepath to scores
 
             for line in fp:
                 numbers = line.strip().split(" ")[2]
