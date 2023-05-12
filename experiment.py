@@ -905,7 +905,6 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
 
     # from pytorch_lightning.
 
-    plugins = []
     if len(gpus) == 1 and nodes == 1:
         strategy = None
     else:
