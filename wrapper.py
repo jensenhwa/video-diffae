@@ -10,8 +10,10 @@ import wandb
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.strategies import DDPStrategy
 from torch import nn, distributed, amp
 from torch.utils.data import DataLoader, DistributedSampler
+from torchmetrics import AUROC
 from tqdm import tqdm
 
 from dataset_video import ShanghaiTechDataset
@@ -40,6 +42,8 @@ class OneClassModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
         self.encoder = encoder
+        self.validation_step_outputs = []
+        self.validation_step_labels = []
 
     def setup(self, stage=None) -> None:
         """
@@ -55,15 +59,34 @@ class OneClassModel(LightningModule):
             print('local seed:', seed)
         ##############################################
         self.train_data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/scripts/full_train_img_to_video.txt",
+                                              flow_path='/home/eprakash/diffae/train_raw_flows_masked',
                                               image_size=128,
                                               original_resolution=None,)
+        self.val_data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/test_list.txt",
+                                            flow_path='/home/eprakash/diffae/test_raw_flows_masked',
+                                            image_size=128,
+                                            cf_stride=False,
+                                            labels_path="/home/eprakash/shanghaitech/testing/test_labels_list.txt")
         print('train data:', len(self.train_data))
+        print('val data:', len(self.val_data))
+
         self.load_semantic_average()
 
     def train_dataloader(self):
         print('on train dataloader start ...')
         sampler = DistributedSampler(self.train_data, shuffle=True, drop_last=True)
         return DataLoader(self.train_data, batch_size=self.batch_size, sampler=sampler, shuffle=False,
+                          num_workers=2,
+                          pin_memory=True,
+                          drop_last=True,
+                          multiprocessing_context=get_context('fork'),)
+
+    def val_dataloader(self):
+        print('on val dataloader start ...')
+        sampler = DistributedSampler(self.val_data, shuffle=False, drop_last=False)
+        return DataLoader(self.val_data, batch_size=min(len(self.val_data) // get_world_size(), self.batch_size),
+                          sampler=sampler,
+                          shuffle=False,
                           num_workers=2,
                           pin_memory=True,
                           drop_last=True,
@@ -112,7 +135,25 @@ class OneClassModel(LightningModule):
         self.log("oneclass_loss", oneclass_loss)
         return loss
 
-    def on_train_batch_end(self, outputs, batch, batch_idx: int, dataloader_idx: int) -> None:
+    def validation_step(self, batch, batch_idx):
+        x, y = batch['img'], batch['label']
+
+        features = self.encoder.encode(x)
+        dists = torch.sum((features - self.c.to(self.device)) ** 2, dim=1)
+
+        self.validation_step_outputs.append(dists)
+        self.validation_step_labels.append(y)
+
+    def on_validation_epoch_end(self) -> None:
+        all_preds = torch.stack(self.validation_step_outputs)
+        norm_preds = all_preds / torch.max(all_preds)
+        all_labels = torch.stack(self.validation_step_labels)
+        auroc = AUROC(task="binary")(norm_preds, all_labels)
+        self.log("auroc", auroc)
+        print(auroc)
+        self.validation_step_outputs.clear()
+
+    def on_train_batch_end(self, outputs, batch, batch_idx: int) -> None:
         if self.encoder.is_last_accum(batch_idx):
             # only apply ema on the last gradient accumulation step,
             # if it is the iteration that has optimizer.step()
@@ -345,15 +386,10 @@ def main(args):
             config=args,
             save_dir=conf.logdir)
 
-        plugins = []
         if len(gpus) == 1 and nodes == 1:
             strategy = None
         else:
-            strategy = 'ddp'
-            from pytorch_lightning.plugins import DDPPlugin
-
-            # important for working with gradient checkpoint
-            plugins.append(DDPPlugin(find_unused_parameters=False))
+            strategy = DDPStrategy(find_unused_parameters=False)
 
         print("training now")
         trainer = Trainer(
@@ -361,7 +397,8 @@ def main(args):
             resume_from_checkpoint=resume,
             gpus=gpus,
             num_nodes=nodes,
-            accelerator=strategy,
+            accelerator="gpu",
+            strategy=strategy,
             precision=16 if conf.fp16 else 32,
             callbacks=[
                 checkpoint,
@@ -372,7 +409,6 @@ def main(args):
             replace_sampler_ddp=True,
             logger=wandb_logger,
             accumulate_grad_batches=conf.accum_batches,
-            plugins=plugins
         )
 
         trainer.fit(gan)

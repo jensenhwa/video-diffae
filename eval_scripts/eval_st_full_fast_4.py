@@ -11,7 +11,7 @@ import sys
 
 from dataset_video import ShanghaiTechDataset
 from experiment import LitModel
-from templates_video import video_64_autoenc
+from templates_video import video_autoenc
 
 torch.cuda.empty_cache()
 
@@ -28,7 +28,7 @@ device = 'cuda:' + str(cuda_device)
 if (cuda_device == 2 or cuda_device == 3):
     sys.exit()
 '''
-conf = video_64_autoenc()
+conf = video_autoenc()
 
 print(conf.name)
 model = LitModel(conf)
@@ -38,7 +38,10 @@ model.ema_model.eval()
 model.ema_model.to(device)
 
 conf.img_size = 128
-data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/test_list.txt", image_size=128, cf_stride=False)
+data = ShanghaiTechDataset(path="/home/eprakash/shanghaitech/testing/test_list.txt",
+                           flow_path='/home/jy2k16/video-diffae/test_raw_flows_pt',
+                           image_size=128,
+                           cf_stride=False)
 num_batches = int(len(data)/batch_size) + 1
 start_batch = (cuda_device * num_batches) // NUM_GPUS # Floored lower bound
 end_batch = ((cuda_device + 1) * num_batches) // NUM_GPUS # Floored upper bound

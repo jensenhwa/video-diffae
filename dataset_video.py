@@ -18,7 +18,8 @@ class ShanghaiTechDataset(Dataset):
                  stride: int = 16,
                  # Stride between frames (1 = use all frames, 2 = skip every other frame, etc.)
                  cf_stride: bool = True,
-                 use_flow: bool = True):
+                 use_flow: bool = True,
+                 labels_path: str = None):
         self.original_resolution = original_resolution
         self.use_flow = use_flow
         self.data, self.idx_to_vid, self.vid_to_idxs = self.load_data(path)
@@ -31,6 +32,12 @@ class ShanghaiTechDataset(Dataset):
         self.length = len(self.data) - len(self.vid_to_idxs) * self.stride * self.frame_batch_size * 2
         print(self.length)
 
+        self.labels = []
+        if labels_path is not None:
+            with open(labels_path, "r") as fp:
+                for line in fp:
+                    label = int(line.strip())
+                    self.labels.append(label)
 
         self.idx_to_centerframe = None
         self.get_center_frames()  # Set center frames to be used in __getitem__()
@@ -162,4 +169,7 @@ class ShanghaiTechDataset(Dataset):
             frame_batch = torch.cat((frame_batch, flows_batch), dim=1)
 
         frame_batch = frame_batch.permute((1, 0, 2, 3))  # (C, T, H, W)
-        return {'img': frame_batch, 'index': index}
+        ret = {'img': frame_batch, 'index': index}
+        if len(self.labels) > 0:
+            ret['label'] = self.labels[index]  # 0 = normal, 1 = anomalous
+        return ret
